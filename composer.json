@@ -1,5 +1,5 @@
 {
-    "name": "sensio/distribution-bundle",
+    "name": "se7enxweb/sensio-distribution-bundle",
     "description": "Base bundle for Symfony Distributions",
     "keywords": ["distribution","configuration"],
     "type": "symfony-bundle",
