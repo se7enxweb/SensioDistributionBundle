@@ -279,19 +279,119 @@ EOF
             , $bootstrapContent));
     }
 
+    // protected static function executeCommand(Event $event, $consoleDir, $cmd, $timeout = 300)
+    // {
+    //     // $php = ProcessExecutor::escape(static::getPhp(false));
+    //     $php = static::getPhp(false);
+    //     // $phpArgs = implode(' ', array_map(['Composer\Util\ProcessExecutor', 'escape'], static::getPhpArguments()));
+    //     $phpArgs = implode(' ', static::getPhpArguments());
+    //     // $console = ProcessExecutor::escape($consoleDir.'/console');
+    //     $console = $consoleDir.'/console';
+    //     if ($event->getIO()->isDecorated()) {
+    //         $console .= ' --ansi';
+    //     }
+
+    //     // echo ($cmd);
+    //     // exit;
+    //     // $process = new Process(array($php.($phpArgs ? ' '.$phpArgs : '').' '.$console.' '.$cmd), null, null, null, $timeout);
+    //     $process = new Process(
+    //         array_merge(
+    //             [$php],
+    //             $phpArgs ? explode(' ', $phpArgs) : [],
+    //             [$console, $cmd]
+    //         ),
+    //         null,
+    //         null,
+    //         null,
+    //         $timeout
+    //     );
+    //     $process->run(function ($type, $buffer) use ($event) { $event->getIO()->write($buffer, false); });
+    //     if (!$process->isSuccessful()) {
+    //         throw new \RuntimeException(sprintf("An error occurred when executing the \"%s\" command:\n\n%s\n\n%s", ProcessExecutor::escape($cmd), self::removeDecoration($process->getOutput()), self::removeDecoration($process->getErrorOutput())));
+    //     }
+    // }
+
+    // protected static function executeCommand(Event $event, $consoleDir, $cmd, $timeout = 300)
+    // {
+    //     $php = static::getPhp(false);             // e.g. /opt/alt/php73/usr/bin/php
+    //     $phpArgs = static::getPhpArguments();     // already an array
+    //     $console = $consoleDir.'/console';        // just the file path
+
+    //     // Build the full argv
+    //     $argv = array_merge([$php], $phpArgs, [$console]);
+
+    //     if ($event->getIO()->isDecorated()) {
+    //         $argv[] = '--ansi';                  // separate argument
+    //     }
+
+    //     // Split $cmd into tokens
+    //     foreach (preg_split('/\s+/', trim($cmd)) as $token) {
+    //         if ($token !== '') {
+    //             $argv[] = $token;
+    //         }
+    //     }
+
+    //     $process = new Process($argv, null, null, null, $timeout);
+
+    //     $process->run(function ($type, $buffer) use ($event) {
+    //         $event->getIO()->write($buffer, false);
+    //     });
+
+    //     if (!$process->isSuccessful()) {
+    //         throw new \RuntimeException(sprintf(
+    //             "An error occurred when executing the \"%s\" command:\n\n%s\n\n%s",
+    //             $cmd,
+    //             self::removeDecoration($process->getOutput()),
+    //             self::removeDecoration($process->getErrorOutput())
+    //         ));
+    //     }
+    // }
+
+    // 7x : eZ Platform Related Patch : 2025.08
+
     protected static function executeCommand(Event $event, $consoleDir, $cmd, $timeout = 300)
     {
-        $php = ProcessExecutor::escape(static::getPhp(false));
-        $phpArgs = implode(' ', array_map(array('Composer\Util\ProcessExecutor', 'escape'), static::getPhpArguments()));
-        $console = ProcessExecutor::escape($consoleDir.'/console');
+        // 7x : eZ Platform Related Patch : 2025.08
+        // Note: Testing durring porting process requried this change. Not needed now.
+        // Note: Force PHP 7.3 binary with custom path.
+        // $php = '/opt/alt/php73/usr/bin/php';
+        $php = 'php';
+    
+        // Get any PHP CLI arguments
+        $phpArgs = static::getPhpArguments(); // already an array
+    
+        // Path to Symfony console
+        $console = $consoleDir . '/console';
+    
+        // Build the full argv array
+        $argv = array_merge([$php], $phpArgs, [$console]);
+    
+        // Append --ansi if IO is decorated
         if ($event->getIO()->isDecorated()) {
-            $console .= ' --ansi';
+            $argv[] = '--ansi';
         }
-
-        $process = new Process($php.($phpArgs ? ' '.$phpArgs : '').' '.$console.' '.$cmd, null, null, null, $timeout);
-        $process->run(function ($type, $buffer) use ($event) { $event->getIO()->write($buffer, false); });
+    
+        // Split the command string into tokens and append
+        foreach (preg_split('/\s+/', trim($cmd)) as $token) {
+            if ($token !== '') {
+                $argv[] = $token;
+            }
+        }
+    
+        // Create and run the process
+        $process = new Process($argv, null, null, null, $timeout);
+        $process->run(function ($type, $buffer) use ($event) {
+            $event->getIO()->write($buffer, false);
+        });
+    
+        // Throw exception if process fails
         if (!$process->isSuccessful()) {
-            throw new \RuntimeException(sprintf("An error occurred when executing the \"%s\" command:\n\n%s\n\n%s", ProcessExecutor::escape($cmd), self::removeDecoration($process->getOutput()), self::removeDecoration($process->getErrorOutput())));
+            throw new \RuntimeException(sprintf(
+                "An error occurred when executing the \"%s\" command:\n\n%s\n\n%s",
+                $cmd,
+                self::removeDecoration($process->getOutput()),
+                self::removeDecoration($process->getErrorOutput())
+            ));
         }
     }
 
