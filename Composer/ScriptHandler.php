@@ -178,7 +178,7 @@ class ScriptHandler
             return;
         }
 
-        static::executeCommand($event, $consoleDir, 'assets:install '.$symlink.ProcessExecutor::escape($webDir), $options['process-timeout']);
+        static::executeCommand($event, $consoleDir, 'assets:install ' . $symlink . trim( $webDir, "'"), $options['process-timeout']);
     }
 
     /**
